@@ -6,6 +6,7 @@
 extern crate alloc;
 
 pub mod prelude {
+    pub use crate::iter::IterCloneExt;
     pub use crate::iter::IterExt;
     pub use crate::slice::SliceExt;
     pub use crate::str::StrExt;
