@@ -30,7 +30,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if self.remaining.starts_with(self.sequence) {
-                self.remaining = &self.remaining.get(self.sequence.len()..).unwrap_or(&[]);
+                self.remaining = self.remaining.get(self.sequence.len()..).unwrap_or(&[]);
                 continue;
             }
 
