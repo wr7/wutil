@@ -2,7 +2,7 @@
 
 #![no_std]
 
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", test))]
 extern crate alloc;
 
 pub mod prelude {

@@ -4,9 +4,8 @@ where
     I: Iterator + Clone,
     F: FnMut(&I::Item) -> bool + Clone,
 {
-    iter: I,
+    iter: Option<I>,
     pred: F,
-    consumed: bool,
 }
 
 impl<I, F> Split<I, F>
@@ -16,9 +15,8 @@ where
 {
     pub(super) fn new(iter: I, pred: F) -> Self {
         Self {
-            iter,
+            iter: Some(iter),
             pred,
-            consumed: false,
         }
     }
 }
@@ -29,9 +27,8 @@ where
     I: Iterator + Clone,
     F: FnMut(&I::Item) -> bool + Clone,
 {
-    iter: I,
+    iter: Option<I>,
     pred: F,
-    consumed: bool,
 }
 
 impl<I, F> Iterator for SplitIterator<I, F>
@@ -42,14 +39,10 @@ where
     type Item = I::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.consumed {
-            return None;
-        }
-
-        let item = self.iter.next()?;
+        let item = self.iter.as_mut()?.next()?;
 
         if (self.pred)(&item) {
-            self.consumed = true;
+            self.iter = None;
             return None;
         }
 
@@ -65,30 +58,23 @@ where
     type Item = SplitIterator<I, F>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.consumed {
-            return None;
-        }
-
-        let next_iter = self.iter.clone();
+        let next_iter = self.iter.clone()?;
 
         loop {
-            let Some(item) = self.iter.next() else {
-                self.consumed = true;
-                return Some(SplitIterator {
-                    iter: next_iter,
-                    pred: self.pred.clone(),
-                    consumed: false,
-                });
+            let Some(item) = self.iter.as_mut()?.next() else {
+                self.iter = None;
+                break;
             };
 
             if (self.pred)(&item) {
-                return Some(SplitIterator {
-                    iter: next_iter,
-                    pred: self.pred.clone(),
-                    consumed: false,
-                });
+                break;
             }
         }
+
+        Some(SplitIterator {
+            iter: Some(next_iter),
+            pred: self.pred.clone(),
+        })
     }
 }
 
@@ -98,9 +84,8 @@ where
     I: Iterator + Clone,
     F: FnMut(&I::Item) -> bool + Clone,
 {
-    iter: I,
+    iter: Option<I>,
     pred: F,
-    consumed: bool,
 }
 
 impl<I, F> SplitInclusive<I, F>
@@ -110,9 +95,8 @@ where
 {
     pub(super) fn new(iter: I, pred: F) -> Self {
         Self {
-            iter,
+            iter: Some(iter),
             pred,
-            consumed: false,
         }
     }
 }
@@ -123,9 +107,8 @@ where
     I: Iterator + Clone,
     F: FnMut(&I::Item) -> bool + Clone,
 {
-    iter: I,
+    iter: Option<I>,
     pred: F,
-    consumed: bool,
 }
 
 impl<I, F> Iterator for InclusiveSplitIterator<I, F>
@@ -136,14 +119,10 @@ where
     type Item = I::Item;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.consumed {
-            return None;
-        }
-
-        let item = self.iter.next()?;
+        let item = self.iter.as_mut()?.next()?;
 
         if (self.pred)(&item) {
-            self.consumed = true;
+            self.iter = None;
         }
 
         Some(item)
@@ -158,29 +137,76 @@ where
     type Item = InclusiveSplitIterator<I, F>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.consumed {
-            return None;
-        }
-
-        let next_iter = self.iter.clone();
+        let next_iter = self.iter.clone()?;
 
         loop {
-            let Some(item) = self.iter.next() else {
-                self.consumed = true;
-                return Some(InclusiveSplitIterator {
-                    iter: next_iter,
-                    pred: self.pred.clone(),
-                    consumed: false,
-                });
+            let Some(item) = self.iter.as_mut()?.next() else {
+                self.iter = None;
+                break;
             };
 
             if (self.pred)(&item) {
-                return Some(InclusiveSplitIterator {
-                    iter: next_iter,
-                    pred: self.pred.clone(),
-                    consumed: false,
-                });
+                break;
             }
+        }
+
+        Some(InclusiveSplitIterator {
+            iter: Some(next_iter),
+            pred: self.pred.clone(),
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use alloc::vec::Vec;
+
+    #[test]
+    fn split() {
+        let tests: &[(&[u32], &[&[u32]])] = &[
+            (
+                &[0, 10, 20, 0, 0, 50, 0],
+                &[&[], &[10, 20], &[], &[50], &[]],
+            ),
+            (
+                &[0, 10, 20, 0, 0, 50, 0, 2],
+                &[&[], &[10, 20], &[], &[50], &[2]],
+            ),
+        ];
+
+        for (input, expected) in tests {
+            let split_nums: Vec<Vec<u32>> = input
+                .iter()
+                .split(|n| **n == 0)
+                .map(|n| n.copied().collect::<Vec<u32>>())
+                .collect();
+
+            assert_eq!(&split_nums, expected);
+        }
+    }
+
+    #[test]
+    fn split_inclusive() {
+        let tests: &[(&[u32], &[&[u32]])] = &[
+            (
+                &[0, 10, 20, 0, 0, 50, 0],
+                &[&[0], &[10, 20, 0], &[0], &[50, 0], &[]],
+            ),
+            (
+                &[0, 10, 20, 0, 0, 50, 0, 2],
+                &[&[0], &[10, 20, 0], &[0], &[50, 0], &[2]],
+            ),
+        ];
+
+        for (input, expected_output) in tests {
+            let split_nums: Vec<Vec<u32>> = input
+                .iter()
+                .split_inclusive(|n| **n == 0)
+                .map(|n| n.copied().collect::<Vec<u32>>())
+                .collect();
+
+            assert_eq!(&split_nums, expected_output);
         }
     }
 }
