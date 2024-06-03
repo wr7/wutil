@@ -60,6 +60,29 @@ pub trait IterCloneExt: Iterator + Clone {
     {
         Split::new(self, pred)
     }
+    /// Splits an iterator into an iterator of iterators. Includes the separator at the end.
+    /// # Example
+    /// ```rust
+    /// # use wutil::prelude::*;
+    /// let nums = [0u32, 10, 20, 0, 0, 5, 50, 0];
+    ///
+    /// let split_nums: Vec<Vec<u32>> = nums
+    ///     .iter()
+    ///     .filter(|n| *n % 2 == 0)
+    ///     .split_inclusive(|n| **n == 0)
+    ///     .map(|n| n.copied().collect::<Vec<u32>>())
+    ///     .collect();
+    ///
+    /// let expected: &[&[u32]] = &[&[0], &[10, 20, 0], &[0], &[50, 0], &[]];
+    ///
+    /// assert_eq!(split_nums, expected);
+    /// ```
+    fn split_inclusive<P>(self, pred: P) -> SplitInclusive<Self, P>
+    where
+        P: FnMut(&Self::Item) -> bool + Clone,
+    {
+        SplitInclusive::new(self, pred)
+    }
 }
 
 impl<I: Iterator> IterExt for I {}
