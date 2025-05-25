@@ -20,9 +20,9 @@
 ///
 /// assert_eq!(&foo.0, &bar);
 /// ```
-pub unsafe fn transmute_ref<T, U>(input: &T) -> &U {
+pub unsafe fn transmute_ref<T, U>(input: &T) -> &U { unsafe {
     (input as *const T).cast::<U>().as_ref().unwrap_unchecked()
-}
+}}
 
 /// Transmutes between mutable references. This function is safer
 /// than casting between pointers because it keeps lifetimes intact.
@@ -48,6 +48,6 @@ pub unsafe fn transmute_ref<T, U>(input: &T) -> &U {
 ///
 /// assert_eq!(&bar, "bars");
 /// ```
-pub unsafe fn transmute_mut<T, U>(input: &mut T) -> &mut U {
+pub unsafe fn transmute_mut<T, U>(input: &mut T) -> &mut U { unsafe {
     (input as *mut T).cast::<U>().as_mut().unwrap_unchecked()
-}
+}}
