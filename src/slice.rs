@@ -13,7 +13,7 @@ impl<T> SliceExt for [T] {
         self.windows(subslice.len()).position(|w| w == subslice)
     }
 
-    fn with_sequence_removed<'a>(&'a self, sequence: &'a [T]) -> WithSequenceRemoved<T>
+    fn with_sequence_removed<'a>(&'a self, sequence: &'a [T]) -> WithSequenceRemoved<'a, T>
     where
         T: PartialEq,
     {
@@ -57,7 +57,7 @@ pub trait SliceExt {
     fn with_sequence_removed<'a>(
         &'a self,
         sequence: &'a [Self::Inner],
-    ) -> WithSequenceRemoved<Self::Inner>
+    ) -> WithSequenceRemoved<'a, Self::Inner>
     where
         Self::Inner: PartialEq;
 

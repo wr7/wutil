@@ -15,11 +15,18 @@ pub(crate) mod s {
         ops::Range,
     };
 
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct SizeAndAlign<const SIZE: usize, Align> {
+        a: [u8; SIZE],
+        b: [Align; 0],
+    }
+
     /// A thin `Copy` wrapper around `Range<usize>`. This has the same layout as `Range<usize>`.
-    #[repr(transparent)]
+    #[repr(C)]
     #[derive(Clone, Copy)]
     pub struct Span {
-        inner: MaybeUninit<[u8; mem::size_of::<Range<usize>>()]>,
+        inner: MaybeUninit<SizeAndAlign<{ mem::size_of::<Range<usize>>() }, usize>>,
     }
 }
 
